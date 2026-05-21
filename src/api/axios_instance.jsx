@@ -20,12 +20,12 @@ export const IncidentEndpoints = {
 }
 
 export const UserEndpoints = {
-    get_token: () => axiosInstance.post("users/token/"),
-    refresh_token: () => axiosInstance.post("users/refresh/"),
+    get_token: (credentials) => axiosInstance.post("users/token/",credentials),
+    refresh_token: (refreshToken) => axiosInstance.post("users/refresh/",{refresh:refreshToken}),
     // for user creation
-    user_service: () => axiosInstance.post("users/user-service/"),
+    create_incident: (data) => axiosInstance.post("users/user-service/",data),
     // for password update
-    user_service: () => axiosInstance.patch("users/user-service/"),
+    change_password: (data) => axiosInstance.patch("users/user-service/",data),
 
 }
 

@@ -16,8 +16,9 @@ axiosInstance.interceptors.request.use(
 );
 export const IncidentEndpoints = {
     incidents_list : () => axiosInstance.get("incidents/incidents_list/"),
-    incident_by_id : (incident_id) => axiosInstance.get(`incidents/incident/${incident_id}/details/`)
-}
+    incident_by_id : (incident_id) => axiosInstance.get(`incidents/incident/${incident_id}/details/`),
+    create_incident : (data) => axiosInstance.post("incidents/create_incident/",data)
+  }
 
 export const UserEndpoints = {
     get_token: (credentials) => axiosInstance.post("users/token/",credentials),

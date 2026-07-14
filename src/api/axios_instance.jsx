@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: " http://127.0.0.1:8000/",
+  baseURL: "http://127.0.0.1:8000/",
 });
 
 axiosInstance.interceptors.request.use(
@@ -15,9 +15,9 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 export const IncidentEndpoints = {
-    incidents_list : () => axiosInstance.get("incidents/incidents_list/"),
-    incident_by_id : (incident_id) => axiosInstance.get(`incidents/incident/${incident_id}/details/`),
-    create_incident : (data) => axiosInstance.post("incidents/create_incident/",data)
+    create_incident : (data) => axiosInstance.post("incidents/incidents_list/",data),
+    incidents_list  : () => axiosInstance.get("incidents/incidents_list/"),
+    incident_by_id  : (incident_id) => axiosInstance.get(`incidents/incident/${incident_id}/details/`),
   }
 
 export const UserEndpoints = {

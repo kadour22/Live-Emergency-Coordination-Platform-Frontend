@@ -1,25 +1,38 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import Navbar from './components/Navigation/Navbar'
 import CreateIncidentRaport from './components/Incidents/CreateIncidentRaport'
 import Login from './components/Users/Login'
+import Register from './components/Users/Register'
 import Footer from './components/Footer/Footer'
+import LandingPage from './components/Landing/Landing'
+import AdminDashboard from './components/Admin/AdminDashboard'
+import Incidentlist from './components/Incidents/Incidentlist'
+const PublicLayout = () => {
+  return (
+    <>
+      <Navbar />
+      <Outlet />
+      <Footer />
+    </>
+  )
+}
+
 const App = () => {
-    if(navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition((position) => {
-      console.log(position.coords.latitude, position.coords.longitude)
-    })
-  } else {
-    console.log("Geolocation is not supported by this browser.")
-  }
   return (
     <BrowserRouter>
-      <Navbar/>
       <Routes>
-         <Route path='/' element={<Login/>} />
-         <Route path='/create' element={<CreateIncidentRaport/>} />
+        <Route element={<PublicLayout />}>
+          <Route path='/' element={<LandingPage />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
+          <Route path='/create' element={<CreateIncidentRaport />} />
+          <Route path='/incidents' element={<Incidentlist />} />
+        </Route>
+
+        {/* No layout wrapper here, so no navbar/footer on admin pages */}
+        <Route path='/admin' element={<AdminDashboard />} />
       </Routes>
-      <Footer/>
     </BrowserRouter>
   )
 }

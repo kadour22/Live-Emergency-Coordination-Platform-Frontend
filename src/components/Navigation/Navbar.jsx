@@ -61,13 +61,23 @@ const Navbar = () => {
             </Link>
           )}
         </nav>
-
-        <Link
-          to="/report"
+        {isLoggedIn ?(
+            <Link
+          to="/create"
           className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-50"
         >
           Report now
         </Link>
+        ) :(
+          <Link
+          to="/login"
+          className="rounded-full bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-50"
+        >
+          Report now
+        </Link>
+        )
+        }
+        
       </div>
     </header>
   )

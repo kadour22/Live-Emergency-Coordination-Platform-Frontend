@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axiosInstance, { IncidentEndpoints } from '../../api/axios_instance'
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import {
   MapPin,
   Flame,
@@ -17,6 +23,18 @@ import {
 const FONT_DISPLAY = "'Fraunces', serif"
 const FONT_BODY = "'Plus Jakarta Sans', sans-serif"
 
+// Leaflet's default marker icon paths break under bundlers (webpack/vite) unless
+// we re-point them at the imported assets. Without this, markers render as broken images.
+const defaultMarkerIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+})
+
 const incidentTypeOptions = [
   { value: 'fire', label: 'Fire', icon: Flame, tint: 'bg-orange-50 text-orange-600 border-orange-100', tintActive: 'bg-orange-100 border-orange-400 ring-1 ring-orange-400' },
   { value: 'flood', label: 'Flood', icon: Waves, tint: 'bg-sky-50 text-sky-600 border-sky-100', tintActive: 'bg-sky-100 border-sky-400 ring-1 ring-sky-400' },
@@ -24,6 +42,31 @@ const incidentTypeOptions = [
   { value: 'robbery', label: 'Robbery', icon: ShieldAlert, tint: 'bg-violet-50 text-violet-600 border-violet-100', tintActive: 'bg-violet-100 border-violet-400 ring-1 ring-violet-400' },
   { value: 'medical', label: 'Medical', icon: HeartPulse, tint: 'bg-rose-50 text-rose-600 border-rose-100', tintActive: 'bg-rose-100 border-rose-400 ring-1 ring-rose-400' },
 ]
+
+// Renders inside <MapContainer>. Lets the person fine-tune their location by
+// clicking anywhere on the map or dragging the marker, and keeps the parent's
+// latitude/longitude state in sync with whatever position is chosen.
+const LocationPicker = ({ position, onChange }) => {
+  useMapEvents({
+    click(e) {
+      onChange(e.latlng.lat, e.latlng.lng)
+    },
+  })
+
+  return position ? (
+    <Marker
+      position={position}
+      icon={defaultMarkerIcon}
+      draggable
+      eventHandlers={{
+        dragend: (e) => {
+          const { lat, lng } = e.target.getLatLng()
+          onChange(lat, lng)
+        },
+      }}
+    />
+  ) : null
+}
 
 const CreateIncidentRaport = () => {
   const navigate = useNavigate()
@@ -37,20 +80,24 @@ const CreateIncidentRaport = () => {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  const setPosition = (lat, lng) => {
+    setLatitude(lat)
+    setLongitude(lng)
+    setLocationError('')
+  }
+
   const getLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLatitude(position.coords.latitude)
-          setLongitude(position.coords.longitude)
-          setLocationError('')
+          setPosition(position.coords.latitude, position.coords.longitude)
         },
         (error) => {
-          setLocationError('Could not get your location. Please enable location access.')
+          setLocationError('Could not get your location. Please enable location access, or pick your location on the map below.')
         }
       )
     } else {
-      setLocationError('Geolocation is not supported by this browser.')
+      setLocationError('Geolocation is not supported by this browser. Please pick your location on the map below.')
     }
   }
 
@@ -69,7 +116,7 @@ const CreateIncidentRaport = () => {
     setSuccess(false)
 
     if (!latitude || !longitude) {
-      setSubmitError('Location is required. Please allow location access and try again.')
+      setSubmitError('Location is required. Please allow location access or pick a point on the map, then try again.')
       return
     }
     if (!incidentDescription.trim()) {
@@ -99,6 +146,11 @@ const CreateIncidentRaport = () => {
       setSubmitting(false)
     }
   }
+
+  // Leaflet needs [lat, lng] as numbers; fall back to a sane default center
+  // (used only for the initial map view before geolocation resolves).
+  const mapPosition = latitude && longitude ? [Number(latitude), Number(longitude)] : null
+  const defaultCenter = [36.8065, 10.1815] // Tunis, as a fallback center
 
   return (
     <div
@@ -194,12 +246,43 @@ const CreateIncidentRaport = () => {
               <span className="text-teal-800">
                 Location captured
                 <span className="ml-1 font-mono text-xs text-teal-600">
-                  ({Number(latitude).toFixed(3)}, {Number(longitude).toFixed(3)})
+                  ({Number(latitude).toFixed(5)}, {Number(longitude).toFixed(5)})
                 </span>
               </span>
             ) : (
               <span className="text-stone-500">Detecting your location…</span>
             )}
+          </div>
+
+          {/* Map: lets the person confirm or adjust the detected point */}
+          <div className="mt-4">
+            <label className="text-sm font-semibold text-teal-950">
+              Confirm location on the map
+            </label>
+            <p className="mt-1 text-xs text-stone-500">
+              Click anywhere on the map, or drag the pin, to adjust the reported location.
+            </p>
+            <div className="mt-3 overflow-hidden rounded-xl border border-teal-100">
+              <MapContainer
+                center={mapPosition || defaultCenter}
+                zoom={mapPosition ? 15 : 12}
+                style={{ height: '280px', width: '100%' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <LocationPicker position={mapPosition} onChange={setPosition} />
+              </MapContainer>
+            </div>
+            <button
+              type="button"
+              onClick={getLocation}
+              className="mt-3 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-2 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
+            >
+              <LocateFixed className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Use my current location
+            </button>
           </div>
 
           {/* Alerts */}
